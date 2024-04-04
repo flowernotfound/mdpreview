@@ -12,6 +12,7 @@ def main():
     parser.add_argument('--toc', action='store_true', help='Generate table of contents')
     parser.add_argument('--no-highlight', action='store_true', help='Disable syntax highlighting')
     parser.add_argument('--no-pager', action='store_true', help='Disable pager')
+    parser.add_argument('--output', type=str, default=None, help='Output file path')
     args = parser.parse_args()
 
     if not os.path.isfile(args.file):
@@ -58,8 +59,18 @@ def main():
     except Exception as e:
         print(f"Error: Could not convert Markdown to HTML. {str(e)}")
         return
-
-    print(html)
+    
+    #ファイル出力
+    output_path = args.output
+    if output_path:
+        try:
+            with open(output_path, 'w') as f:
+                f.write(html)
+            print(f"Output saved to {output_path}")
+        except IOError as e:
+            print(f"Error: Could not write to the output file '{output_path}'. {str(e)}")
+    else:
+        print(html)
 
 if __name__ == '__main__':
     main()

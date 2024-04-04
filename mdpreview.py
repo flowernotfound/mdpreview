@@ -4,7 +4,6 @@ import markdown
 import json
 from pygments.formatters import HtmlFormatter
 
-# 定数の定義
 DEFAULT_THEME = 'default'
 DEFAULT_TOC = False
 DEFAULT_HIGHLIGHT = True

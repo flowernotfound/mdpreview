@@ -1,6 +1,8 @@
 import argparse
 import os
 import markdown
+import json
+from pygments.formatters import HtmlFormatter
 
 def main():
     parser = argparse.ArgumentParser(description='Markdown Preview Tool')
@@ -16,7 +18,22 @@ def main():
         print(f"Error: File '{args.file}' does not exist.")
         return
 
-    # 読み込み
+    # 設定の読み込み
+    config = {}
+    if args.config:
+        try:
+            with open(args.config, 'r') as f:
+                config = json.load(f)
+        except IOError as e:
+            print(f"Error: Could not read the configuration file '{args.config}'. {str(e)}")
+            return
+
+    # 設定の適用
+    theme = config.get('theme', args.theme)
+    toc = config.get('toc', args.toc)
+    highlight = config.get('highlight', not args.no_highlight)
+
+    # mdの読み込み
     try:
         with open(args.file, 'r') as f:
             md_content = f.read()
@@ -24,14 +41,20 @@ def main():
         print(f"Error: Could not read the file '{args.file}'. {str(e)}")
         return
 
-    # htmlに変換
+    # HTMLに変換
     try:
         extensions = ['extra', 'smarty']
-        if args.toc:
+        if toc:
             extensions.append('toc')
-        if not args.no_highlight:
+        if highlight:
             extensions.append('codehilite')
+
         html = markdown.markdown(md_content, extensions=extensions)
+
+        # スタイル追加
+        if highlight:
+            style = HtmlFormatter(style=theme).get_style_defs('.codehilite')
+            html = f'<style>{style}</style>\n{html}'
     except Exception as e:
         print(f"Error: Could not convert Markdown to HTML. {str(e)}")
         return

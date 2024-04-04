@@ -4,6 +4,25 @@ import markdown
 import json
 from pygments.formatters import HtmlFormatter
 
+class Config:
+    def __init__(self, config_path=None, theme='default', toc=False, highlight=True):
+        self.theme = theme
+        self.toc = toc
+        self.highlight = highlight
+
+        if config_path:
+            self.load_from_file(config_path)
+
+    def load_from_file(self, config_path):
+        try:
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                self.theme = config.get('theme', self.theme)
+                self.toc = config.get('toc', self.toc)
+                self.highlight = config.get('highlight', self.highlight)
+        except IOError as e:
+            raise Exception(f"Could not read the configuration file '{config_path}'. {str(e)}")
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Markdown Preview Tool')
     parser.add_argument('file', type=str, help='Path to the Markdown file')
@@ -15,16 +34,6 @@ def parse_arguments():
     parser.add_argument('--output', type=str, default=None, help='Output file path')
     return parser.parse_args()
 
-def load_config(config_path):
-    config = {}
-    if config_path:
-        try:
-            with open(config_path, 'r') as f:
-                config = json.load(f)
-        except IOError as e:
-            raise Exception(f"Could not read the configuration file '{config_path}'. {str(e)}")
-    return config
-
 def read_markdown_file(file_path):
     try:
         with open(file_path, 'r') as f:
@@ -34,15 +43,15 @@ def read_markdown_file(file_path):
 
 def convert_markdown_to_html(md_content, config):
     extensions = ['extra', 'smarty']
-    if config.get('toc', False):
+    if config.toc:
         extensions.append('toc')
-    if config.get('highlight', True):
+    if config.highlight:
         extensions.append('codehilite')
 
     html = markdown.markdown(md_content, extensions=extensions)
 
-    if config.get('highlight', True):
-        style = HtmlFormatter(style=config.get('theme', 'default')).get_style_defs('.codehilite')
+    if config.highlight:
+        style = HtmlFormatter(style=config.theme).get_style_defs('.codehilite')
         html = f'<style>{style}</style>\n{html}'
 
     return html
@@ -62,11 +71,7 @@ def main():
         print(f"Error: File '{args.file}' does not exist.")
         return
 
-    config = load_config(args.config)
-    config['theme'] = args.theme
-    config['toc'] = args.toc
-    config['highlight'] = not args.no_highlight
-
+    config = Config(args.config, args.theme, args.toc, not args.no_highlight)
     md_content = read_markdown_file(args.file)
     html = convert_markdown_to_html(md_content, config)
 
